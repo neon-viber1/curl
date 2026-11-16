@@ -1724,6 +1724,16 @@ static CURLcode wssl_handshake(struct Curl_cfilter *cf, struct Curl_easy *data)
       if(ret != WOLFSSL_SUCCESS)
         detail = DOMAIN_NAME_MISMATCH;
     }
+    else if(conn_config->verifyhost && !conn_config->verifypeer) {
+      /* wolfSSL does not run the domain name check in the handshake when
+       * peer verification is off, so do it here. */
+      ret = wolfSSL_X509_check_host(cert, connssl->peer.sni,
+                                    strlen(connssl->peer.sni), 0, NULL);
+      CURL_TRC_CF(data, cf, "check peer certificate for host match on %s "
+                  "-> %d", connssl->peer.sni, ret);
+      if(ret != WOLFSSL_SUCCESS)
+        detail = DOMAIN_NAME_MISMATCH;
+    }
     wolfSSL_X509_free(cert);
   }
 
